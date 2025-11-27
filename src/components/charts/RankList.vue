@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { MemberNameHistory } from '@/types/chat'
-import { MemberNicknameHistory } from '@/components/charts'
+import { computed } from 'vue'
 
-export interface MemberRankItem {
+export interface RankItem {
   id: string
   name: string
   value: number
@@ -11,47 +9,21 @@ export interface MemberRankItem {
 }
 
 interface Props {
-  members: MemberRankItem[]
+  members: RankItem[]
   showAvatar?: boolean
   rankLimit?: number // 限制显示数量，0 表示不限制
-  sessionId?: string // 会话ID，用于查询历史昵称
-  clickable?: boolean // 是否可点击查看历史
+  unit?: string // 单位名称，默认"条"
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showAvatar: false,
   rankLimit: 0,
-  clickable: false,
+  unit: '条',
 })
 
 const displayMembers = computed(() => {
   return props.rankLimit > 0 ? props.members.slice(0, props.rankLimit) : props.members
 })
-
-// 昵称历史弹窗
-const isHistoryModalOpen = ref(false)
-const selectedMember = ref<MemberRankItem | null>(null)
-const selectedMemberHistory = ref<MemberNameHistory[]>([])
-const isLoadingHistory = ref(false)
-
-// 点击成员名称，查看历史
-async function handleMemberClick(member: MemberRankItem) {
-  if (!props.clickable || !props.sessionId) return
-
-  selectedMember.value = member
-  isHistoryModalOpen.value = true
-  isLoadingHistory.value = true
-  selectedMemberHistory.value = []
-
-  try {
-    const history = await window.chatApi.getMemberNameHistory(props.sessionId, parseInt(member.id))
-    selectedMemberHistory.value = history
-  } catch (error) {
-    console.error('加载昵称历史失败:', error)
-  } finally {
-    isLoadingHistory.value = false
-  }
-}
 
 // 获取相对于第一名的百分比
 function getRelativePercentage(index: number): number {
@@ -110,11 +82,7 @@ function getBarColor(index: number): string {
 
       <!-- 名字 -->
       <div class="w-32 shrink-0">
-        <p
-          class="truncate font-medium text-gray-900 dark:text-white"
-          :class="{ 'cursor-pointer hover:text-[#de335e] transition-colors': clickable }"
-          @click="clickable ? handleMemberClick(member) : null"
-        >
+        <p class="truncate font-medium text-gray-900 dark:text-white">
           {{ member.name }}
         </p>
       </div>
@@ -133,25 +101,8 @@ function getBarColor(index: number): string {
       <!-- 数值和百分比 -->
       <div class="flex shrink-0 items-baseline gap-2">
         <span class="text-lg font-bold text-gray-900 dark:text-white">{{ member.value }}</span>
-        <span class="text-sm text-gray-500">条 ({{ member.percentage }}%)</span>
+        <span class="text-sm text-gray-500">{{ unit }} ({{ member.percentage }}%)</span>
       </div>
     </div>
   </div>
-
-  <!-- 昵称历史弹窗 -->
-  <UModal v-model:open="isHistoryModalOpen" :ui="{ width: 'max-w-md' }">
-    <template #header>
-      <div class="flex items-center gap-2">
-        <span class="text-lg font-semibold text-gray-900 dark:text-white">昵称历史</span>
-        <span v-if="selectedMember" class="text-sm text-gray-500">{{ selectedMember.name }}</span>
-      </div>
-    </template>
-    <template #body>
-      <div v-if="isLoadingHistory" class="py-8 text-center text-sm text-gray-400">加载中...</div>
-      <div v-else-if="selectedMemberHistory.length > 0" class="px-2 py-4">
-        <MemberNicknameHistory :history="selectedMemberHistory" :compact="true" />
-      </div>
-      <div v-else class="py-8 text-center text-sm text-gray-400">暂无昵称记录</div>
-    </template>
-  </UModal>
 </template>

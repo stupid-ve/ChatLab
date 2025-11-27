@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { MemberActivity, MemberNameHistory, RepeatAnalysis, CatchphraseAnalysis } from '@/types/chat'
-import { MemberRankList, BarChart } from '@/components/charts'
-import type { MemberRankItem, BarChartData } from '@/components/charts'
+import { RankListPro, BarChart, ListPro } from '@/components/charts'
+import type { RankItem, BarChartData } from '@/components/charts'
 
 interface TimeFilter {
   startTs?: number
@@ -22,37 +22,37 @@ const isLoadingRepeat = ref(false)
 // 复读排行榜显示模式：count（绝对次数）或 rate（复读率）
 const repeatRankMode = ref<'count' | 'rate'>('rate')
 
-// 转换复读数据为排行榜格式（绝对次数）
-const originatorRankData = computed<MemberRankItem[]>(() => {
+// 转换复读数据为排行榜格式
+const originatorRankData = computed<RankItem[]>(() => {
   if (!repeatAnalysis.value) return []
   const data =
     repeatRankMode.value === 'count' ? repeatAnalysis.value.originators : repeatAnalysis.value.originatorRates
-  return data.slice(0, 10).map((m) => ({
+  return data.map((m) => ({
     id: m.memberId.toString(),
     name: m.name,
-    value: repeatRankMode.value === 'count' ? (m as any).count : (m as any).count,
+    value: (m as any).count,
     percentage: repeatRankMode.value === 'count' ? (m as any).percentage : (m as any).rate,
   }))
 })
 
-const initiatorRankData = computed<MemberRankItem[]>(() => {
+const initiatorRankData = computed<RankItem[]>(() => {
   if (!repeatAnalysis.value) return []
   const data = repeatRankMode.value === 'count' ? repeatAnalysis.value.initiators : repeatAnalysis.value.initiatorRates
-  return data.slice(0, 10).map((m) => ({
+  return data.map((m) => ({
     id: m.memberId.toString(),
     name: m.name,
-    value: repeatRankMode.value === 'count' ? (m as any).count : (m as any).count,
+    value: (m as any).count,
     percentage: repeatRankMode.value === 'count' ? (m as any).percentage : (m as any).rate,
   }))
 })
 
-const breakerRankData = computed<MemberRankItem[]>(() => {
+const breakerRankData = computed<RankItem[]>(() => {
   if (!repeatAnalysis.value) return []
   const data = repeatRankMode.value === 'count' ? repeatAnalysis.value.breakers : repeatAnalysis.value.breakerRates
-  return data.slice(0, 10).map((m) => ({
+  return data.map((m) => ({
     id: m.memberId.toString(),
     name: m.name,
-    value: repeatRankMode.value === 'count' ? (m as any).count : (m as any).count,
+    value: (m as any).count,
     percentage: repeatRankMode.value === 'count' ? (m as any).percentage : (m as any).rate,
   }))
 })
@@ -114,18 +114,8 @@ async function loadCatchphraseAnalysis() {
   }
 }
 
-// Top 10 排行榜数据
-const top10RankData = computed<MemberRankItem[]>(() => {
-  return props.memberActivity.slice(0, 10).map((m) => ({
-    id: m.memberId.toString(),
-    name: m.name,
-    value: m.messageCount,
-    percentage: m.percentage,
-  }))
-})
-
-// 完整排行榜数据
-const fullRankData = computed<MemberRankItem[]>(() => {
+// 成员活跃度排行数据
+const memberRankData = computed<RankItem[]>(() => {
   return props.memberActivity.map((m) => ({
     id: m.memberId.toString(),
     name: m.name,
@@ -133,8 +123,6 @@ const fullRankData = computed<MemberRankItem[]>(() => {
     percentage: m.percentage,
   }))
 })
-
-const isOpen = ref(false)
 
 // 昵称变更记录
 interface MemberWithHistory {
@@ -225,30 +213,7 @@ function formatPeriod(startTs: number, endTs: number | null): string {
 <template>
   <div class="space-y-6">
     <!-- 成员活跃度排行 -->
-    <div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
-        <h3 class="font-semibold text-gray-900 dark:text-white">成员活跃度排行</h3>
-        <!-- 完整排行榜 Dialog -->
-        <UModal v-model:open="isOpen" :ui="{ width: 'max-w-3xl' }">
-          <UButton v-if="memberActivity.length > 10" icon="i-heroicons-list-bullet" color="gray" variant="ghost">
-            查看完整排行
-          </UButton>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">完整成员排行榜</h3>
-              <span>（共 {{ memberActivity.length }} 位成员）</span>
-            </div>
-          </template>
-          <template #body>
-            <div class="max-h-[60vh] overflow-y-auto">
-              <MemberRankList :members="fullRankData" :session-id="sessionId" :clickable="true" />
-            </div>
-          </template>
-        </UModal>
-      </div>
-
-      <MemberRankList :members="top10RankData" :session-id="sessionId" :clickable="true" />
-    </div>
+    <RankListPro :members="memberRankData" title="成员活跃度排行" />
 
     <!-- 昵称变更记录区域 -->
     <div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -406,86 +371,53 @@ function formatPeriod(startTs: number, endTs: number | null): string {
         </div>
 
         <!-- 最容易产生复读（原创者） -->
-        <div class="rounded-lg border border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-800/50">
-          <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">🎯 谁的聊天最容易产生复读</h4>
-            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-              {{ repeatRankMode === 'rate' ? '被复读次数 / 总发言数' : '发出的消息被别人复读的次数' }}
-            </p>
-          </div>
-          <MemberRankList
-            v-if="originatorRankData.length > 0"
-            :members="originatorRankData"
-            :session-id="sessionId"
-            :clickable="true"
-          />
-          <div v-else class="px-4 py-6 text-center text-sm text-gray-400">暂无数据</div>
-        </div>
+        <RankListPro
+          v-if="originatorRankData.length > 0"
+          :members="originatorRankData"
+          title="🎯 谁的聊天最容易产生复读"
+          :description="repeatRankMode === 'rate' ? '被复读次数 / 总发言数' : '发出的消息被别人复读的次数'"
+          unit="次"
+        />
 
         <!-- 最喜欢挑起复读（挑起者） -->
-        <div class="rounded-lg border border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-800/50">
-          <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">🔥 谁最喜欢挑起复读</h4>
-            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-              {{ repeatRankMode === 'rate' ? '挑起复读次数 / 总发言数' : '第二个发送相同消息、带起节奏的人' }}
-            </p>
-          </div>
-          <MemberRankList
-            v-if="initiatorRankData.length > 0"
-            :members="initiatorRankData"
-            :session-id="sessionId"
-            :clickable="true"
-          />
-          <div v-else class="px-4 py-6 text-center text-sm text-gray-400">暂无数据</div>
-        </div>
+        <RankListPro
+          v-if="initiatorRankData.length > 0"
+          :members="initiatorRankData"
+          title="🔥 谁最喜欢挑起复读"
+          :description="repeatRankMode === 'rate' ? '挑起复读次数 / 总发言数' : '第二个发送相同消息、带起节奏的人'"
+          unit="次"
+        />
 
         <!-- 最喜欢打断复读（终结者） -->
-        <div class="rounded-lg border border-gray-100 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-800/50">
-          <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">✂️ 谁喜欢打断复读</h4>
-            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-              {{ repeatRankMode === 'rate' ? '打断复读次数 / 总发言数' : '终结复读链的人' }}
-            </p>
-          </div>
-          <MemberRankList
-            v-if="breakerRankData.length > 0"
-            :members="breakerRankData"
-            :session-id="sessionId"
-            :clickable="true"
-          />
-          <div v-else class="px-4 py-6 text-center text-sm text-gray-400">暂无数据</div>
-        </div>
+        <RankListPro
+          v-if="breakerRankData.length > 0"
+          :members="breakerRankData"
+          title="✂️ 谁喜欢打断复读"
+          :description="repeatRankMode === 'rate' ? '打断复读次数 / 总发言数' : '终结复读链的人'"
+          unit="次"
+        />
       </div>
 
       <div v-else class="px-5 py-8 text-center text-sm text-gray-400">该群组暂无复读记录</div>
     </div>
 
     <!-- 口头禅分析模块 -->
-    <div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-800">
-        <h3 class="font-semibold text-gray-900 dark:text-white">💬 口头禅分析</h3>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{
-            isLoadingCatchphrase
-              ? '加载中...'
-              : catchphraseAnalysis
-                ? `分析了 ${catchphraseAnalysis.members.length} 位成员的高频发言`
-                : '暂无数据'
-          }}
-        </p>
-      </div>
+    <div
+      v-if="isLoadingCatchphrase"
+      class="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center text-sm text-gray-400 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+    >
+      正在分析口头禅数据...
+    </div>
 
-      <div v-if="isLoadingCatchphrase" class="px-5 py-8 text-center text-sm text-gray-400">正在分析口头禅数据...</div>
-
-      <div
-        v-else-if="catchphraseAnalysis && catchphraseAnalysis.members.length > 0"
-        class="divide-y divide-gray-100 dark:divide-gray-800"
-      >
-        <div
-          v-for="member in catchphraseAnalysis.members.slice(0, 20)"
-          :key="member.memberId"
-          class="flex items-start gap-4 px-5 py-4"
-        >
+    <ListPro
+      v-else-if="catchphraseAnalysis && catchphraseAnalysis.members.length > 0"
+      :items="catchphraseAnalysis.members"
+      title="💬 口头禅分析"
+      :description="`分析了 ${catchphraseAnalysis.members.length} 位成员的高频发言`"
+      countTemplate="共 {count} 位成员"
+    >
+      <template #item="{ item: member }">
+        <div class="flex items-start gap-4">
           <!-- 成员名称 -->
           <div class="w-28 shrink-0 pt-1 font-medium text-gray-900 dark:text-white">
             {{ member.name }}
@@ -518,9 +450,14 @@ function formatPeriod(startTs: number, endTs: number | null): string {
             </div>
           </div>
         </div>
-      </div>
+      </template>
+    </ListPro>
 
-      <div v-else class="px-5 py-8 text-center text-sm text-gray-400">暂无口头禅数据</div>
+    <div
+      v-else
+      class="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center text-sm text-gray-400 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+    >
+      暂无口头禅数据
     </div>
   </div>
 </template>

@@ -163,8 +163,10 @@ export const useChatStore = defineStore(
   },
   {
     persist: {
-      // 只持久化 currentSessionId，sessions 从数据库加载
+      // 使用 sessionStorage：页面刷新时保留，应用重启时清除
+      // 这样启动应用默认显示 WelcomeGuide，但刷新页面保留当前状态
       pick: ['currentSessionId'],
+      storage: sessionStorage,
     },
   }
 )
