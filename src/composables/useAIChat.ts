@@ -63,9 +63,9 @@ export function useAIChat(
   timeFilter?: { startTs: number; endTs: number },
   chatType: 'group' | 'private' = 'group'
 ) {
-  // 获取 chat store 中的提示词配置
+  // 获取 chat store 中的提示词配置和全局设置
   const chatStore = useChatStore()
-  const { activeGroupPreset, activePrivatePreset } = storeToRefs(chatStore)
+  const { activeGroupPreset, activePrivatePreset, aiGlobalSettings } = storeToRefs(chatStore)
 
   // 获取当前聊天类型对应的提示词配置
   const currentPromptConfig = computed(() => {
@@ -168,6 +168,7 @@ export function useAIChat(
       const context = {
         sessionId,
         timeFilter: timeFilter ? { startTs: timeFilter.startTs, endTs: timeFilter.endTs } : undefined,
+        maxMessagesLimit: aiGlobalSettings.value.maxMessagesPerRequest,
       }
 
       // 收集历史消息（排除当前用户消息和 AI 占位消息）

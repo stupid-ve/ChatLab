@@ -40,13 +40,17 @@ function ensureLogDir(): void {
 
 /**
  * 获取当前日志文件路径
+ * 日志文件名格式：ai_YYYY-MM-DD_HH-mm.log
  */
 function getLogFilePath(): string {
   if (LOG_FILE) return LOG_FILE
 
   ensureLogDir()
-  const date = new Date().toISOString().split('T')[0]
-  LOG_FILE = path.join(getLogDir(), `ai_${date}.log`)
+  const now = new Date()
+  const date = now.toISOString().split('T')[0]
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  LOG_FILE = path.join(getLogDir(), `ai_${date}_${hours}-${minutes}.log`)
 
   return LOG_FILE
 }

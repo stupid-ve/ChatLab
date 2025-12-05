@@ -20,12 +20,10 @@ function getDbDir(): string {
 
   try {
     const docPath = app.getPath('documents')
-    console.log('[Database] app.getPath("documents"):', docPath)
     DB_DIR = path.join(docPath, 'ChatLab', 'databases')
   } catch (error) {
     console.error('[Database] Error getting userData path:', error)
     DB_DIR = path.join(process.cwd(), 'databases')
-    console.log('[Database] Using fallback DB_DIR:', DB_DIR)
   }
 
   return DB_DIR
@@ -129,15 +127,9 @@ export function openDatabase(sessionId: string): Database.Database | null {
  * 导入解析后的数据到数据库
  */
 export function importData(parseResult: ParseResult): string {
-  console.log('[Database] importData called')
   const sessionId = generateSessionId()
-  console.log('[Database] Generated sessionId:', sessionId)
-
   const dbPath = getDbPath(sessionId)
-  console.log('[Database] Creating database at:', dbPath)
-
   const db = createDatabase(sessionId)
-  console.log('[Database] Database created successfully')
 
   try {
     const importTransaction = db.transaction(() => {
@@ -255,24 +247,18 @@ export function importData(parseResult: ParseResult): string {
       }
     })
 
-    console.log('[Database] Executing transaction...')
     importTransaction()
-    console.log('[Database] Transaction completed')
 
     const fileExists = fs.existsSync(dbPath)
-    console.log('[Database] File exists after transaction:', fileExists, dbPath)
 
     return sessionId
   } catch (error) {
     console.error('[Database] Error in importData:', error)
     throw error
   } finally {
-    console.log('[Database] Closing database...')
     db.close()
-    console.log('[Database] Database closed')
 
     const fileExists = fs.existsSync(dbPath)
-    console.log('[Database] File exists after close:', fileExists)
   }
 }
 
@@ -282,28 +268,19 @@ export function importData(parseResult: ParseResult): string {
 export function getAllSessions(): AnalysisSession[] {
   ensureDbDir()
   const sessions: AnalysisSession[] = []
-
   const dbDir = getDbDir()
-  console.log('[Database] getAllSessions: DB_DIR =', dbDir)
-  console.log('[Database] getAllSessions: DB_DIR exists =', fs.existsSync(dbDir))
-
   const allFiles = fs.readdirSync(dbDir)
-  console.log('[Database] getAllSessions: all files in dir:', allFiles)
-
   const files = allFiles.filter((f) => f.endsWith('.db'))
-  console.log('[Database] getAllSessions: filtered .db files:', files)
 
   for (const file of files) {
     const sessionId = file.replace('.db', '')
     const dbPath = getDbPath(sessionId)
-    console.log('[Database] Opening database:', dbPath)
 
     try {
       const db = new Database(dbPath)
       db.pragma('journal_mode = WAL')
 
       const meta = db.prepare('SELECT * FROM meta LIMIT 1').get() as DbMeta | undefined
-      console.log('[Database] Meta:', meta)
 
       if (meta) {
         const messageCount = (
@@ -325,7 +302,6 @@ export function getAllSessions(): AnalysisSession[] {
             )
             .get() as { count: number }
         ).count
-        console.log('[Database] Counts:', { messageCount, memberCount })
 
         sessions.push({
           id: sessionId,
@@ -345,7 +321,6 @@ export function getAllSessions(): AnalysisSession[] {
     }
   }
 
-  console.log('[Database] getAllSessions: returning', sessions.length, 'sessions')
   return sessions.sort((a, b) => b.importedAt - a.importedAt)
 }
 
@@ -405,11 +380,18 @@ export function deleteSession(sessionId: string): boolean {
   const shmPath = dbPath + '-shm'
 
   try {
-    if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath)
-    if (fs.existsSync(walPath)) fs.unlinkSync(walPath)
-    if (fs.existsSync(shmPath)) fs.unlinkSync(shmPath)
+    if (fs.existsSync(dbPath)) {
+      fs.unlinkSync(dbPath)
+    }
+    if (fs.existsSync(walPath)) {
+      fs.unlinkSync(walPath)
+    }
+    if (fs.existsSync(shmPath)) {
+      fs.unlinkSync(shmPath)
+    }
     return true
-  } catch {
+  } catch (error) {
+    console.error('[Database] Failed to delete session:', error)
     return false
   }
 }

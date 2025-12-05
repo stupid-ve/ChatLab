@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import AIConfigEditModal from './AIConfigEditModal.vue'
 
-// Emits../common/settings/AIConfigEditModal.vue../../settings/AIConfigEditModal.vue
+// Emits
 const emit = defineEmits<{
   'config-changed': []
 }>()

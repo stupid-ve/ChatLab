@@ -13,6 +13,7 @@ import type {
   ProviderInfo,
   ToolCall,
 } from './types'
+import { aiLogger } from '../logger'
 
 const DEFAULT_BASE_URL = 'http://localhost:11434/v1'
 
@@ -198,6 +199,9 @@ export class OpenAICompatibleService implements ILLMService {
     let buffer = ''
     const toolCallsAccumulator: Map<number, { id: string; name: string; arguments: string }> = new Map()
 
+    let totalChunks = 0
+    let totalContent = ''
+
     try {
       while (true) {
         // 检查是否已中止
@@ -218,6 +222,7 @@ export class OpenAICompatibleService implements ILLMService {
           if (!trimmed || !trimmed.startsWith('data: ')) continue
 
           const data = trimmed.slice(6)
+
           if (data === '[DONE]') {
             if (toolCallsAccumulator.size > 0) {
               const toolCalls: ToolCall[] = Array.from(toolCallsAccumulator.values()).map((tc) => ({
@@ -240,7 +245,17 @@ export class OpenAICompatibleService implements ILLMService {
             const delta = parsed.choices?.[0]?.delta
             const finishReason = parsed.choices?.[0]?.finish_reason
 
+            // 调试：如果有 delta 但没有 content，记录其他可能的内容字段
+            if (delta && !delta.content && !delta.tool_calls && !finishReason) {
+              const deltaKeys = Object.keys(delta)
+              if (deltaKeys.length > 0 && !deltaKeys.every(k => ['role', 'name', 'audio_content'].includes(k))) {
+                aiLogger.warn('OpenAI-Compatible', '检测到未处理的 delta 字段', { deltaKeys, delta })
+              }
+            }
+
             if (delta?.content) {
+              totalChunks++
+              totalContent += delta.content
               yield {
                 content: delta.content,
                 isFinished: false,
@@ -295,12 +310,38 @@ export class OpenAICompatibleService implements ILLMService {
           }
         }
       }
+
+      // 流读取完成后的处理（如果没有收到 [DONE] 或 finish_reason）
+      // 这种情况可能发生在某些 API 不发送标准结束标记时
+      aiLogger.info('OpenAI-Compatible', '流循环结束，执行兜底处理', {
+        totalChunks,
+        totalContentLength: totalContent.length,
+        toolCallsCount: toolCallsAccumulator.size,
+        bufferRemaining: buffer.length,
+      })
+
+      // 如果有累积的 tool_calls，发送它们
+      if (toolCallsAccumulator.size > 0) {
+        const toolCalls: ToolCall[] = Array.from(toolCallsAccumulator.values()).map((tc) => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.name,
+            arguments: tc.arguments,
+          },
+        }))
+        yield { content: '', isFinished: true, finishReason: 'tool_calls', tool_calls: toolCalls }
+      } else {
+        // 没有 tool_calls，发送普通完成信号
+        yield { content: '', isFinished: true, finishReason: 'stop' }
+      }
     } catch (error) {
       // 如果是中止错误，正常返回
       if (error instanceof Error && error.name === 'AbortError') {
         yield { content: '', isFinished: true, finishReason: 'stop' }
         return
       }
+      aiLogger.error('OpenAI-Compatible', '流处理异常', { error: String(error) })
       throw error
     } finally {
       reader.releaseLock()

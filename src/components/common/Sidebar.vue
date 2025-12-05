@@ -197,7 +197,7 @@ function isPrivateChat(session: AnalysisSession): boolean {
             text="右键可删除或重命名聊天记录"
             :popper="{ placement: 'right' }"
           >
-            <div class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 mb-4 px-2 flex items-center gap-1">
+            <div class="sticky top-0 bg-gray-50 dark:bg-gray-900 mb-4 px-2 flex items-center gap-1">
               <div class="text-sm font-medium text-gray-500">聊天记录</div>
               <UIcon name="i-heroicons-question-mark-circle" class="size-3.5 text-gray-400" />
             </div>

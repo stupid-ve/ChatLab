@@ -453,17 +453,17 @@ export class Agent {
         if (chunk.content) {
           accumulatedContent += chunk.content
 
-          // 检测是否开始出现 <tool_call> 或 <think> 标签
-          // 一旦检测到，停止向前端发送后续内容
+          // 检测是否开始出现 <tool_call> 标签（用于 fallback 解析）
+          // 只对 <tool_call> 进入缓冲模式
+          // 注意：<think> 标签由某些 LLM（如 MiniMax）输出，但不应该影响正常内容发送
+          // <think> 内容会在最终输出时被清理
           if (!isBufferingToolCall) {
-            // 检查累积内容中是否有开始标签
-            if (/<tool_call>/i.test(accumulatedContent) || /<think>/i.test(accumulatedContent)) {
+            // 只检查 <tool_call> 标签
+            if (/<tool_call>/i.test(accumulatedContent)) {
               isBufferingToolCall = true
+              aiLogger.info('Agent', '检测到 tool_call 标签，进入缓冲模式')
               // 发送标签之前的内容（如果有）
-              const tagStart = Math.min(
-                accumulatedContent.indexOf('<tool_call>') >= 0 ? accumulatedContent.indexOf('<tool_call>') : Infinity,
-                accumulatedContent.indexOf('<think>') >= 0 ? accumulatedContent.indexOf('<think>') : Infinity
-              )
+              const tagStart = accumulatedContent.indexOf('<tool_call>')
               if (tagStart > displayedContent.length) {
                 const newContent = accumulatedContent.slice(displayedContent.length, tagStart)
                 if (newContent) {
@@ -524,12 +524,16 @@ export class Agent {
               }
             } else {
               // 没有 tool_call 标签，正常完成
-              finalContent = accumulatedContent
+              // 清理 <think> 标签内容（某些 LLM 如 MiniMax 会输出思考过程）
+              finalContent = extractThinkingContent(accumulatedContent).cleanContent
               onChunk({ type: 'done', isFinished: true })
 
               aiLogger.info('Agent', '流式执行完成', {
                 toolsUsed: this.toolsUsed,
                 toolRounds: this.toolRounds,
+                finalContentLength: finalContent.length,
+                accumulatedContentLength: accumulatedContent.length,
+                finishReason: chunk.finishReason,
               })
 
               return {

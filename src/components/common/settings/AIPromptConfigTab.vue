@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { storeToRefs } from 'pinia'
 import type { PromptPreset } from '@/types/chat'
@@ -7,7 +7,7 @@ import AIPromptEditModal from './AIPromptEditModal.vue'
 
 // Store
 const chatStore = useChatStore()
-const { groupPresets, privatePresets, aiPromptSettings } = storeToRefs(chatStore)
+const { groupPresets, privatePresets, aiPromptSettings, aiGlobalSettings } = storeToRefs(chatStore)
 
 // Emits
 const emit = defineEmits<{
@@ -19,6 +19,16 @@ const showEditModal = ref(false)
 const editMode = ref<'add' | 'edit'>('add')
 const editingPreset = ref<PromptPreset | null>(null)
 const defaultChatType = ref<'group' | 'private'>('group')
+
+// 发送条数限制
+const globalMaxMessages = computed({
+  get: () => aiGlobalSettings.value.maxMessagesPerRequest,
+  set: (val: number) => {
+    const clampedVal = Math.max(10, Math.min(5000, val || 200))
+    chatStore.updateAIGlobalSettings({ maxMessagesPerRequest: clampedVal })
+    emit('config-changed')
+  },
+})
 
 // 方法
 function openAddModal(chatType: 'group' | 'private') {
@@ -68,6 +78,28 @@ function isActivePreset(presetId: string, chatType: 'group' | 'private'): boolea
 
 <template>
   <div class="space-y-6">
+    <!-- 对话设置 -->
+    <div>
+      <h4 class="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+        <UIcon name="i-heroicons-adjustments-horizontal" class="h-4 w-4 text-green-500" />
+        对话设置
+      </h4>
+      <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+        <div class="flex items-center justify-between">
+          <div class="flex-1 pr-4">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">发送条数限制</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              每次发送给 AI 的最大消息条数，用于控制上下文长度（10-5000）
+            </p>
+          </div>
+          <UInput v-model.number="globalMaxMessages" type="number" min="10" max="5000" class="w-24" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 分隔线 -->
+    <div class="border-t border-gray-200 dark:border-gray-700"></div>
+
     <!-- 群聊预设组 -->
     <div>
       <div class="mb-3 flex items-center justify-between">
@@ -102,7 +134,10 @@ function isActivePreset(presetId: string, chatType: 'group' | 'private'): boolea
                   : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
               ]"
             >
-              <UIcon :name="isActivePreset(preset.id, 'group') ? 'i-heroicons-check' : 'i-heroicons-document-text'" class="h-3.5 w-3.5" />
+              <UIcon
+                :name="isActivePreset(preset.id, 'group') ? 'i-heroicons-check' : 'i-heroicons-document-text'"
+                class="h-3.5 w-3.5"
+              />
             </div>
             <div class="flex items-center gap-2">
               <span class="text-sm font-medium text-gray-900 dark:text-white">{{ preset.name }}</span>
@@ -116,7 +151,9 @@ function isActivePreset(presetId: string, chatType: 'group' | 'private'): boolea
               {{ preset.isBuiltIn ? '查看' : '编辑' }}
             </UButton>
             <UButton size="xs" color="gray" variant="ghost" @click="duplicatePreset(preset.id)">复制</UButton>
-            <UButton v-if="!preset.isBuiltIn" size="xs" color="error" variant="ghost" @click="deletePreset(preset.id)">删除</UButton>
+            <UButton v-if="!preset.isBuiltIn" size="xs" color="error" variant="ghost" @click="deletePreset(preset.id)">
+              删除
+            </UButton>
           </div>
         </div>
       </div>
@@ -159,7 +196,10 @@ function isActivePreset(presetId: string, chatType: 'group' | 'private'): boolea
                   : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
               ]"
             >
-              <UIcon :name="isActivePreset(preset.id, 'private') ? 'i-heroicons-check' : 'i-heroicons-document-text'" class="h-3.5 w-3.5" />
+              <UIcon
+                :name="isActivePreset(preset.id, 'private') ? 'i-heroicons-check' : 'i-heroicons-document-text'"
+                class="h-3.5 w-3.5"
+              />
             </div>
             <div class="flex items-center gap-2">
               <span class="text-sm font-medium text-gray-900 dark:text-white">{{ preset.name }}</span>
@@ -173,7 +213,9 @@ function isActivePreset(presetId: string, chatType: 'group' | 'private'): boolea
               {{ preset.isBuiltIn ? '查看' : '编辑' }}
             </UButton>
             <UButton size="xs" color="gray" variant="ghost" @click="duplicatePreset(preset.id)">复制</UButton>
-            <UButton v-if="!preset.isBuiltIn" size="xs" color="error" variant="ghost" @click="deletePreset(preset.id)">删除</UButton>
+            <UButton v-if="!preset.isBuiltIn" size="xs" color="error" variant="ghost" @click="deletePreset(preset.id)">
+              删除
+            </UButton>
           </div>
         </div>
       </div>

@@ -140,7 +140,8 @@ export function registerChatHandlers(ctx: IpcContext): void {
       // 先关闭 Worker 中的数据库连接
       await worker.closeDatabase(sessionId)
       // 然后删除文件（使用核心模块）
-      return databaseCore.deleteSession(sessionId)
+      const result = databaseCore.deleteSession(sessionId)
+      return result
     } catch (error) {
       console.error('删除会话失败：', error)
       return false

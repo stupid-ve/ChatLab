@@ -232,6 +232,8 @@ export const useChatStore = defineStore(
           if (currentSessionId.value === id) {
             currentSessionId.value = null
           }
+          // 强制从后端刷新会话列表，确保与文件系统同步
+          await loadSessions()
         }
         return success
       } catch (error) {
@@ -355,7 +357,12 @@ export const useChatStore = defineStore(
     })
 
     /** 添加自定义预设 */
-    function addPromptPreset(preset: { name: string; chatType: PromptPreset['chatType']; roleDefinition: string; responseRules: string }) {
+    function addPromptPreset(preset: {
+      name: string
+      chatType: PromptPreset['chatType']
+      roleDefinition: string
+      responseRules: string
+    }) {
       const newPreset: PromptPreset = {
         ...preset,
         id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -368,7 +375,10 @@ export const useChatStore = defineStore(
     }
 
     /** 更新预设 */
-    function updatePromptPreset(presetId: string, updates: { name?: string; chatType?: PromptPreset['chatType']; roleDefinition?: string; responseRules?: string }) {
+    function updatePromptPreset(
+      presetId: string,
+      updates: { name?: string; chatType?: PromptPreset['chatType']; roleDefinition?: string; responseRules?: string }
+    ) {
       const index = customPromptPresets.value.findIndex((p) => p.id === presetId)
       if (index !== -1) {
         customPromptPresets.value[index] = {
@@ -492,7 +502,13 @@ export const useChatStore = defineStore(
       },
       {
         // 自定义模板、AI 全局设置和提示词预设：localStorage（持久保存）
-        pick: ['customKeywordTemplates', 'deletedPresetTemplateIds', 'aiGlobalSettings', 'customPromptPresets', 'aiPromptSettings'],
+        pick: [
+          'customKeywordTemplates',
+          'deletedPresetTemplateIds',
+          'aiGlobalSettings',
+          'customPromptPresets',
+          'aiPromptSettings',
+        ],
         storage: localStorage,
       },
     ],

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import AIConfigTab from './settings/AIConfigTab.vue'
-import AIChatConfigTab from './settings/AIChatConfigTab.vue'
 import AIPromptConfigTab from './settings/AIPromptConfigTab.vue'
 import CacheManageTab from './settings/CacheManageTab.vue'
 
@@ -19,10 +18,9 @@ const emit = defineEmits<{
 // Tab 配置
 const tabs = [
   { id: 'settings', label: '基础设置', icon: 'i-heroicons-cog-6-tooth' },
-  { id: 'ai-model', label: 'AI 模型', icon: 'i-heroicons-sparkles' },
-  { id: 'ai-prompt', label: 'AI 提示词', icon: 'i-heroicons-document-text' },
-  { id: 'ai-chat', label: 'AI 聊天', icon: 'i-heroicons-chat-bubble-left-right' },
-  { id: 'help', label: '帮助', icon: 'i-heroicons-question-mark-circle' },
+  { id: 'ai-config', label: '模型配置', icon: 'i-heroicons-sparkles' },
+  { id: 'ai-prompt', label: 'AI 对话配置', icon: 'i-heroicons-document-text' },
+  { id: 'about', label: '关于', icon: 'i-heroicons-information-circle' },
 ]
 
 const activeTab = ref('settings')
@@ -44,7 +42,7 @@ watch(
   () => props.open,
   (newVal) => {
     if (newVal) {
-      activeTab.value = 'ai-model'
+      activeTab.value = 'ai-config'
       // 刷新 AI 配置
       aiConfigRef.value?.refresh()
     }
@@ -94,19 +92,14 @@ watch(
 
         <!-- Tab 内容 -->
         <div class="h-[500px] overflow-y-auto">
-          <!-- AI 模型配置 Tab -->
-          <div v-show="activeTab === 'ai-model'" class="pr-1">
+          <!-- AI 配置 Tab -->
+          <div v-show="activeTab === 'ai-config'" class="pr-1">
             <AIConfigTab ref="aiConfigRef" @config-changed="handleAIConfigChanged" />
           </div>
 
-          <!-- AI 提示词配置 Tab -->
+          <!-- 系统提示词配置 Tab -->
           <div v-show="activeTab === 'ai-prompt'" class="pr-1">
             <AIPromptConfigTab @config-changed="handleAIConfigChanged" />
-          </div>
-
-          <!-- AI 聊天配置 Tab -->
-          <div v-show="activeTab === 'ai-chat'" class="pr-1">
-            <AIChatConfigTab @config-changed="handleAIConfigChanged" />
           </div>
 
           <!-- 设置 Tab -->
@@ -116,7 +109,7 @@ watch(
           </div>
 
           <!-- 帮助 Tab -->
-          <div v-show="activeTab === 'help'" class="space-y-6 pr-1">
+          <div v-show="activeTab === 'about'" class="space-y-6 pr-1">
             <!-- 关于 -->
             <div>
               <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
@@ -126,7 +119,7 @@ watch(
               <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
                 <div class="flex items-center gap-3">
                   <div
-                    class="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-violet-500 to-purple-600"
+                    class="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-pink-500 to-pink-600"
                   >
                     <UIcon name="i-heroicons-chat-bubble-left-right" class="h-6 w-6 text-white" />
                   </div>

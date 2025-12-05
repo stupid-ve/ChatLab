@@ -267,6 +267,8 @@ interface AgentResult {
 interface ToolContext {
   sessionId: string
   timeFilter?: { startTs: number; endTs: number }
+  /** 用户配置：每次发送给 AI 的最大消息条数 */
+  maxMessagesLimit?: number
 }
 
 // 用户自定义提示词配置

@@ -17,6 +17,8 @@ export interface ToolContext {
     startTs: number
     endTs: number
   }
+  /** 用户配置的消息条数限制（工具获取消息时使用） */
+  maxMessagesLimit?: number
 }
 
 /**

@@ -480,19 +480,38 @@ export async function* chatStream(messages: ChatMessage[], options?: ChatOptions
   let chunkCount = 0
   let totalContent = ''
 
+  let receivedFinish = false
+  let contentChunkCount = 0
+
   try {
     for await (const chunk of service.chatStream(messages, options)) {
       chunkCount++
       totalContent += chunk.content
+
+      // 追踪内容 chunk
+      if (chunk.content) {
+        contentChunkCount++
+      }
+
       yield chunk
 
       if (chunk.isFinished) {
+        receivedFinish = true
         aiLogger.info('LLM', '流式请求完成', {
           chunkCount,
+          contentChunkCount,
           totalContentLength: totalContent.length,
           finishReason: chunk.finishReason,
         })
       }
+    }
+
+    // 如果循环正常结束但没有收到 isFinished 的 chunk，记录警告
+    if (chunkCount > 0 && !receivedFinish) {
+      aiLogger.warn('LLM', '流式请求循环结束但未收到完成信号', {
+        chunkCount,
+        totalContentLength: totalContent.length,
+      })
     }
   } catch (error) {
     aiLogger.error('LLM', '流式请求失败', {

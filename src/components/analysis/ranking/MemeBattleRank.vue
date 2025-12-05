@@ -137,7 +137,7 @@ watch(
 
       <!-- 斗图达人榜 -->
       <div v-if="currentRankData.length > 0" class="relative">
-        <div class="absolute top-3 right-5 z-10">
+        <div class="absolute top-3 right-5">
           <Tabs
             v-model="activeTab"
             :items="[

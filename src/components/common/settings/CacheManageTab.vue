@@ -79,15 +79,6 @@ async function openDirectory(cacheId: string) {
   }
 }
 
-// 打开根目录
-async function openBaseDir() {
-  try {
-    await window.cacheApi.openDir('base')
-  } catch (error) {
-    console.error('打开目录失败:', error)
-  }
-}
-
 // 组件挂载时加载数据
 onMounted(() => {
   loadCacheInfo()
@@ -128,17 +119,17 @@ defineExpose({
     </div>
 
     <!-- 缓存目录列表 -->
-    <div v-else-if="cacheInfo" class="space-y-3">
+    <div v-else-if="cacheInfo" class="space-y-2">
       <div
         v-for="dir in cacheInfo.directories"
         :key="dir.id"
-        class="rounded-lg border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800"
+        class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800"
       >
-        <div class="flex items-start justify-between">
+        <div class="flex items-center justify-between">
           <!-- 左侧信息 -->
-          <div class="flex items-start gap-3">
+          <div class="flex items-center gap-3">
             <div
-              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
               :class="{
                 'bg-green-100 dark:bg-green-900/30': dir.id === 'databases',
                 'bg-violet-100 dark:bg-violet-900/30': dir.id === 'ai',
@@ -148,7 +139,7 @@ defineExpose({
             >
               <UIcon
                 :name="dir.icon"
-                class="h-5 w-5"
+                class="h-4 w-4"
                 :class="{
                   'text-green-600 dark:text-green-400': dir.id === 'databases',
                   'text-violet-600 dark:text-violet-400': dir.id === 'ai',
@@ -162,54 +153,37 @@ defineExpose({
                 <h4 class="text-sm font-medium text-gray-900 dark:text-white">{{ dir.name }}</h4>
                 <UBadge v-if="!dir.exists" variant="soft" color="gray" size="xs">不存在</UBadge>
               </div>
-              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ dir.description }}</p>
-              <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
-                <span class="flex items-center gap-1">
-                  <UIcon name="i-heroicons-document" class="h-3 w-3" />
-                  {{ dir.fileCount }} 个文件
-                </span>
-                <span class="flex items-center gap-1">
-                  <UIcon name="i-heroicons-server" class="h-3 w-3" />
-                  {{ formatSize(dir.size) }}
-                </span>
-              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ dir.description }}</p>
             </div>
           </div>
 
-          <!-- 右侧操作按钮 -->
-          <div class="flex items-center gap-2">
-            <!-- 清理按钮 -->
-            <UButton
-              v-if="dir.canClear && dir.size > 0"
-              icon="i-heroicons-trash"
-              variant="soft"
-              color="red"
-              size="xs"
-              :loading="clearingId === dir.id"
-              :disabled="clearingId !== null"
-              @click="clearCache(dir.id)"
-            >
-              清理
-            </UButton>
-            <!-- 打开目录按钮 -->
-            <UButton icon="i-heroicons-folder-open" variant="ghost" size="xs" @click="openDirectory(dir.id)">
-              打开
-            </UButton>
+          <!-- 右侧信息和操作按钮 -->
+          <div class="flex items-center">
+            <!-- 文件数和大小（固定宽度对齐） -->
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <span class="w-14 text-right">{{ dir.fileCount }} 文件</span>
+              <span class="w-16 text-right">{{ formatSize(dir.size) }}</span>
+            </div>
+            <!-- 操作按钮（固定宽度） -->
+            <div class="ml-4 flex w-36 shrink-0 items-center justify-end gap-1">
+              <UButton
+                v-if="dir.canClear && dir.size > 0"
+                icon="i-heroicons-trash"
+                variant="soft"
+                color="red"
+                size="xs"
+                :loading="clearingId === dir.id"
+                :disabled="clearingId !== null"
+                @click="clearCache(dir.id)"
+              >
+                清理
+              </UButton>
+              <UButton icon="i-heroicons-folder-open" variant="ghost" size="xs" @click="openDirectory(dir.id)">
+                打开
+              </UButton>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- 底部操作栏 -->
-      <div
-        class="flex items-center justify-between rounded-lg border border-dashed border-gray-300 bg-gray-50/50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/30"
-      >
-        <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <UIcon name="i-heroicons-folder" class="h-4 w-4" />
-          <span class="font-mono">{{ cacheInfo.baseDir }}</span>
-        </div>
-        <UButton icon="i-heroicons-arrow-top-right-on-square" variant="link" size="xs" @click="openBaseDir">
-          打开目录
-        </UButton>
       </div>
     </div>
 
