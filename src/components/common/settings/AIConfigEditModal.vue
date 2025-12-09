@@ -197,14 +197,19 @@ async function validateKey() {
 
   try {
     const testApiKey = apiKey || 'sk-no-key-required'
-    const isValid = await window.llmApi.validateApiKey(
+    const result = await window.llmApi.validateApiKey(
       provider || 'openai-compatible',
       testApiKey,
       baseUrl || undefined,
       formData.value.model || undefined
     )
-    validationResult.value = isValid ? 'valid' : 'invalid'
-    validationMessage.value = isValid ? '连接验证成功' : '连接验证失败，但仍可保存'
+    validationResult.value = result.success ? 'valid' : 'invalid'
+    if (result.success) {
+      validationMessage.value = '连接验证成功'
+    } else {
+      // 显示详细的错误信息
+      validationMessage.value = result.error || '连接验证失败'
+    }
   } catch (error) {
     validationResult.value = 'invalid'
     validationMessage.value = '验证失败：' + String(error)
@@ -482,13 +487,7 @@ watch(
                   :placeholder="mode === 'edit' ? '输入新的 API Key（留空保持原有）' : '输入你的 API Key'"
                   class="flex-1"
                 />
-                <UButton
-                  :loading="isValidating"
-                  :disabled="!formData.apiKey"
-                  color="gray"
-                  variant="soft"
-                  @click="validateKey"
-                >
+                <UButton :loading="isValidating" :disabled="!formData.apiKey" variant="soft" @click="validateKey">
                   验证
                 </UButton>
               </div>
@@ -526,7 +525,7 @@ watch(
               <div class="flex gap-2">
                 <UInput v-model="formData.baseUrl" placeholder="http://localhost:11434/v1" class="flex-1" />
                 <UButton :loading="isValidating" :disabled="!formData.baseUrl" variant="soft" @click="validateKey">
-                  测试
+                  验证
                 </UButton>
               </div>
             </div>
@@ -616,7 +615,6 @@ watch(
                 <UButton
                   :loading="isValidating"
                   :disabled="!formData.apiKey || !formData.baseUrl"
-                  color="gray"
                   variant="soft"
                   @click="validateKey"
                 >

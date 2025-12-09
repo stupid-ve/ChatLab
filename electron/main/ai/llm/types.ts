@@ -150,8 +150,9 @@ export interface ILLMService {
 
   /**
    * 验证 API Key 是否有效
+   * @returns 验证结果和可能的错误信息
    */
-  validateApiKey(): Promise<boolean>
+  validateApiKey(): Promise<{ success: boolean; error?: string }>
 }
 
 /**

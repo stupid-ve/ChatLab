@@ -276,7 +276,7 @@ export class QwenService implements ILLMService {
     }
   }
 
-  async validateApiKey(): Promise<boolean> {
+  async validateApiKey(): Promise<{ success: boolean; error?: string }> {
     try {
       // 发送一个简单请求验证 API Key
       const response = await fetch(`${this.baseUrl}/models`, {
@@ -285,9 +285,24 @@ export class QwenService implements ILLMService {
           Authorization: `Bearer ${this.apiKey}`,
         },
       })
-      return response.ok
-    } catch {
-      return false
+      if (response.ok) {
+        return { success: true }
+      }
+      // 尝试获取错误详情
+      const errorText = await response.text()
+      let errorMessage = `HTTP ${response.status}`
+      try {
+        const errorJson = JSON.parse(errorText)
+        errorMessage = errorJson.error?.message || errorJson.message || errorMessage
+      } catch {
+        if (errorText) {
+          errorMessage = errorText.slice(0, 200)
+        }
+      }
+      return { success: false, error: errorMessage }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
     }
   }
 }

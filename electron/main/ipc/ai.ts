@@ -265,6 +265,7 @@ export function registerAIHandlers({ win }: IpcContext): void {
 
   /**
    * 验证 API Key（支持自定义 baseUrl 和 model）
+   * 返回对象格式：{ success: boolean, error?: string }
    */
   ipcMain.handle(
     'llm:validateApiKey',
@@ -274,10 +275,12 @@ export function registerAIHandlers({ win }: IpcContext): void {
         const service = llm.createLLMService({ provider, apiKey, baseUrl, model })
         const result = await service.validateApiKey()
         console.log('[LLM:validateApiKey] 验证结果:', result)
-        return result
+        return { success: result.success, error: result.error }
       } catch (error) {
         console.error('[LLM:validateApiKey] 验证失败：', error)
-        return false
+        // 提取有意义的错误信息
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
       }
     }
   )

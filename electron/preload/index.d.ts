@@ -225,7 +225,12 @@ interface LlmApi {
   setActiveConfig: (id: string) => Promise<{ success: boolean; error?: string }>
 
   // 验证和检查
-  validateApiKey: (provider: string, apiKey: string, baseUrl?: string, model?: string) => Promise<boolean>
+  validateApiKey: (
+    provider: string,
+    apiKey: string,
+    baseUrl?: string,
+    model?: string
+  ) => Promise<{ success: boolean; error?: string }>
   hasConfig: () => Promise<boolean>
 
   // 聊天功能

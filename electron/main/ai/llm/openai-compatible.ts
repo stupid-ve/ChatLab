@@ -248,7 +248,7 @@ export class OpenAICompatibleService implements ILLMService {
             // 调试：如果有 delta 但没有 content，记录其他可能的内容字段
             if (delta && !delta.content && !delta.tool_calls && !finishReason) {
               const deltaKeys = Object.keys(delta)
-              if (deltaKeys.length > 0 && !deltaKeys.every(k => ['role', 'name', 'audio_content'].includes(k))) {
+              if (deltaKeys.length > 0 && !deltaKeys.every((k) => ['role', 'name', 'audio_content'].includes(k))) {
                 aiLogger.warn('OpenAI-Compatible', '检测到未处理的 delta 字段', { deltaKeys, delta })
               }
             }
@@ -348,7 +348,7 @@ export class OpenAICompatibleService implements ILLMService {
     }
   }
 
-  async validateApiKey(): Promise<boolean> {
+  async validateApiKey(): Promise<{ success: boolean; error?: string }> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -370,19 +370,32 @@ export class OpenAICompatibleService implements ILLMService {
 
       // 200 表示成功，401/403 表示认证失败，其他状态可能是参数问题但服务可达
       if (response.ok) {
-        return true
+        return { success: true }
+      }
+
+      // 尝试获取错误详情
+      const errorText = await response.text()
+      let errorMessage = `HTTP ${response.status}`
+      try {
+        const errorJson = JSON.parse(errorText)
+        errorMessage = errorJson.error?.message || errorJson.message || errorMessage
+      } catch {
+        if (errorText) {
+          errorMessage = errorText.slice(0, 200)
+        }
       }
 
       // 认证失败
       if (response.status === 401 || response.status === 403) {
-        return false
+        return { success: false, error: errorMessage }
       }
 
       // 其他错误（如 400 参数错误）但服务可达，认为验证通过
       // 因为这说明认证成功了，只是请求参数有问题
-      return true
-    } catch {
-      return false
+      return { success: true }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
     }
   }
 }
