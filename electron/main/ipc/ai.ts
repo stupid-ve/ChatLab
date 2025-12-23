@@ -445,6 +445,7 @@ export function registerAIHandlers({ win }: IpcContext): void {
                 content: result.content,
                 toolsUsed: result.toolsUsed,
                 toolRounds: result.toolRounds,
+                totalUsage: result.totalUsage,
               },
             })
 
@@ -452,6 +453,7 @@ export function registerAIHandlers({ win }: IpcContext): void {
               toolsUsed: result.toolsUsed,
               toolRounds: result.toolRounds,
               contentLength: result.content.length,
+              totalUsage: result.totalUsage,
             })
           } catch (error) {
             // 如果是中止错误，不报告为错误

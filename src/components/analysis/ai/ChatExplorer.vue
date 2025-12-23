@@ -27,6 +27,7 @@ const {
   currentConversationId,
   currentToolStatus,
   toolsUsedInCurrentRound,
+  sessionTokenUsage,
   sendMessage,
   loadConversation,
   startNewConversation,
@@ -514,8 +515,18 @@ watch(
                 </template>
               </UPopover>
 
-              <!-- 右侧：配置状态指示 -->
+              <!-- 右侧：Token 使用量 + 配置状态指示 -->
               <div class="flex items-center gap-3">
+                <!-- Token 使用量 -->
+                <div
+                  v-if="sessionTokenUsage.totalTokens > 0"
+                  class="flex items-center gap-1.5 text-xs text-gray-400"
+                  title="本次会话累计 Token 使用量"
+                >
+                  <UIcon name="i-heroicons-chart-bar-square" class="h-3.5 w-3.5" />
+                  <span>{{ sessionTokenUsage.totalTokens.toLocaleString() }} tokens</span>
+                </div>
+
                 <div
                   v-if="!isCheckingConfig"
                   class="flex items-center gap-1.5 text-xs transition-colors"

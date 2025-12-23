@@ -80,6 +80,15 @@ export interface AgentConfig {
 }
 
 /**
+ * Token 使用量
+ */
+export interface TokenUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
+
+/**
  * Agent 流式响应 chunk
  */
 export interface AgentStreamChunk {
@@ -97,6 +106,8 @@ export interface AgentStreamChunk {
   error?: string
   /** 是否完成 */
   isFinished?: boolean
+  /** Token 使用量（type=done 时返回累计值） */
+  usage?: TokenUsage
 }
 
 /**
@@ -109,6 +120,8 @@ export interface AgentResult {
   toolsUsed: string[]
   /** 工具调用轮数 */
   toolRounds: number
+  /** 总 Token 使用量（累计所有 LLM 调用） */
+  totalUsage?: TokenUsage
 }
 
 // ==================== 提示词配置类型 ====================
@@ -235,6 +248,8 @@ export class Agent {
   private historyMessages: ChatMessage[] = []
   private chatType: 'group' | 'private' = 'group'
   private promptConfig?: PromptConfig
+  /** 累计 Token 使用量 */
+  private totalUsage: TokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
 
   constructor(
     context: ToolContext,
@@ -262,6 +277,17 @@ export class Agent {
   }
 
   /**
+   * 累加 Token 使用量
+   */
+  private addUsage(usage?: { promptTokens: number; completionTokens: number; totalTokens: number }): void {
+    if (usage) {
+      this.totalUsage.promptTokens += usage.promptTokens
+      this.totalUsage.completionTokens += usage.completionTokens
+      this.totalUsage.totalTokens += usage.totalTokens
+    }
+  }
+
+  /**
    * 执行对话（非流式）
    * @param userMessage 用户消息
    */
@@ -270,7 +296,7 @@ export class Agent {
 
     // 检查是否已中止
     if (this.isAborted()) {
-      return { content: '', toolsUsed: [], toolRounds: 0 }
+      return { content: '', toolsUsed: [], toolRounds: 0, totalUsage: this.totalUsage }
     }
 
     // 初始化消息（包含历史记录）
@@ -294,6 +320,7 @@ export class Agent {
           content: '',
           toolsUsed: this.toolsUsed,
           toolRounds: this.toolRounds,
+          totalUsage: this.totalUsage,
         }
       }
 
@@ -302,6 +329,9 @@ export class Agent {
         tools,
         abortSignal: this.abortSignal,
       })
+
+      // 累加 Token 使用量
+      this.addUsage(response.usage)
 
       let toolCallsToProcess = response.tool_calls
 
@@ -323,6 +353,7 @@ export class Agent {
               content: cleanContent,
               toolsUsed: this.toolsUsed,
               toolRounds: this.toolRounds,
+              totalUsage: this.totalUsage,
             }
           }
         } else {
@@ -332,6 +363,7 @@ export class Agent {
             content: response.content,
             toolsUsed: this.toolsUsed,
             toolRounds: this.toolRounds,
+            totalUsage: this.totalUsage,
           }
         }
       }
@@ -349,10 +381,12 @@ export class Agent {
     })
 
     const finalResponse = await chat(this.messages, this.config.llmOptions)
+    this.addUsage(finalResponse.usage)
     return {
       content: finalResponse.content,
       toolsUsed: this.toolsUsed,
       toolRounds: this.toolRounds,
+      totalUsage: this.totalUsage,
     }
   }
 
@@ -366,8 +400,8 @@ export class Agent {
 
     // 检查是否已中止
     if (this.isAborted()) {
-      onChunk({ type: 'done', isFinished: true })
-      return { content: '', toolsUsed: [], toolRounds: 0 }
+      onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
+      return { content: '', toolsUsed: [], toolRounds: 0, totalUsage: this.totalUsage }
     }
 
     // 初始化消息（包含历史记录）
@@ -387,11 +421,12 @@ export class Agent {
     while (this.toolRounds < this.config.maxToolRounds!) {
       // 每轮开始时检查是否中止
       if (this.isAborted()) {
-        onChunk({ type: 'done', isFinished: true })
+        onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
         return {
           content: finalContent,
           toolsUsed: this.toolsUsed,
           toolRounds: this.toolRounds,
+          totalUsage: this.totalUsage,
         }
       }
 
@@ -408,11 +443,12 @@ export class Agent {
       })) {
         // 每个 chunk 时检查是否中止
         if (this.isAborted()) {
-          onChunk({ type: 'done', isFinished: true })
+          onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
           return {
             content: finalContent + accumulatedContent,
             toolsUsed: this.toolsUsed,
             toolRounds: this.toolRounds,
+            totalUsage: this.totalUsage,
           }
         }
         if (chunk.content) {
@@ -444,6 +480,11 @@ export class Agent {
           toolCalls = chunk.tool_calls
         }
 
+        // 累加 Token 使用量（流式响应在最后一个 chunk 返回 usage）
+        if (chunk.usage) {
+          this.addUsage(chunk.usage)
+        }
+
         if (chunk.isFinished) {
           // 如果没有标准 tool_calls，尝试 fallback 解析
           if (chunk.finishReason !== 'tool_calls' || !toolCalls) {
@@ -467,22 +508,24 @@ export class Agent {
                 }
                 finalContent = cleanContent
                 aiLogger.info('Agent', 'AI 回复', finalContent)
-                onChunk({ type: 'done', isFinished: true })
+                onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
                 return {
                   content: finalContent,
                   toolsUsed: this.toolsUsed,
                   toolRounds: this.toolRounds,
+                  totalUsage: this.totalUsage,
                 }
               }
             } else {
               // 没有 tool_call 标签，正常完成
               finalContent = extractThinkingContent(accumulatedContent).cleanContent
               aiLogger.info('Agent', 'AI 回复', finalContent)
-              onChunk({ type: 'done', isFinished: true })
+              onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
               return {
                 content: finalContent,
                 toolsUsed: this.toolsUsed,
                 toolRounds: this.toolRounds,
+                totalUsage: this.totalUsage,
               }
             }
           }
@@ -532,11 +575,12 @@ export class Agent {
 
     // 检查是否已中止
     if (this.isAborted()) {
-      onChunk({ type: 'done', isFinished: true })
+      onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
       return {
         content: finalContent,
         toolsUsed: this.toolsUsed,
         toolRounds: this.toolRounds,
+        totalUsage: this.totalUsage,
       }
     }
 
@@ -551,15 +595,19 @@ export class Agent {
       abortSignal: this.abortSignal,
     })) {
       if (this.isAborted()) {
-        onChunk({ type: 'done', isFinished: true })
+        onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
         break
       }
       if (chunk.content) {
         finalContent += chunk.content
         onChunk({ type: 'content', content: chunk.content })
       }
+      // 累加 Token 使用量
+      if (chunk.usage) {
+        this.addUsage(chunk.usage)
+      }
       if (chunk.isFinished) {
-        onChunk({ type: 'done', isFinished: true })
+        onChunk({ type: 'done', isFinished: true, usage: this.totalUsage })
       }
     }
 
@@ -567,6 +615,7 @@ export class Agent {
       content: finalContent,
       toolsUsed: this.toolsUsed,
       toolRounds: this.toolRounds,
+      totalUsage: this.totalUsage,
     }
   }
 

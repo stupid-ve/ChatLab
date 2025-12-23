@@ -151,6 +151,8 @@ export class DeepSeekService implements ILLMService {
       temperature: options?.temperature ?? 0.7,
       max_tokens: options?.maxTokens ?? 2048,
       stream: true,
+      // 启用流式响应中的 usage 统计
+      stream_options: { include_usage: true },
     }
 
     if (options?.tools && options.tools.length > 0) {
@@ -265,6 +267,15 @@ export class DeepSeekService implements ILLMService {
                 reason = 'tool_calls'
               }
 
+              // 解析 usage 信息
+              const usage = parsed.usage
+                ? {
+                    promptTokens: parsed.usage.prompt_tokens,
+                    completionTokens: parsed.usage.completion_tokens,
+                    totalTokens: parsed.usage.total_tokens,
+                  }
+                : undefined
+
               // 如果有 tool_calls，返回它们
               if (toolCallsAccumulator.size > 0) {
                 const toolCalls: ToolCall[] = Array.from(toolCallsAccumulator.values()).map((tc) => ({
@@ -275,9 +286,9 @@ export class DeepSeekService implements ILLMService {
                     arguments: tc.arguments,
                   },
                 }))
-                yield { content: '', isFinished: true, finishReason: reason, tool_calls: toolCalls }
+                yield { content: '', isFinished: true, finishReason: reason, tool_calls: toolCalls, usage }
               } else {
-                yield { content: '', isFinished: true, finishReason: reason }
+                yield { content: '', isFinished: true, finishReason: reason, usage }
               }
               return
             }

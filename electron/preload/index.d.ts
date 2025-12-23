@@ -294,6 +294,13 @@ interface LlmApi {
   ) => Promise<{ success: boolean; error?: string }>
 }
 
+// Token 使用量类型
+interface TokenUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
+
 // Agent 相关类型
 interface AgentStreamChunk {
   type: 'content' | 'tool_start' | 'tool_result' | 'done' | 'error'
@@ -303,12 +310,16 @@ interface AgentStreamChunk {
   toolResult?: unknown
   error?: string
   isFinished?: boolean
+  /** Token 使用量（type=done 时返回累计值） */
+  usage?: TokenUsage
 }
 
 interface AgentResult {
   content: string
   toolsUsed: string[]
   toolRounds: number
+  /** 总 Token 使用量（累计所有 LLM 调用） */
+  totalUsage?: TokenUsage
 }
 
 interface ToolContext {
@@ -399,6 +410,7 @@ export {
   AgentResult,
   ToolContext,
   PromptConfig,
+  TokenUsage,
   CacheDirectoryInfo,
   CacheInfo,
 }

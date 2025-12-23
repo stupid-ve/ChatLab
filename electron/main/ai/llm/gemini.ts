@@ -396,6 +396,8 @@ export class GeminiService implements ILLMService {
     let buffer = ''
     // 用于累积工具调用（可能跨多个 chunk）
     const toolCallsAccumulator: ToolCall[] = []
+    // 用于追踪最新的 usage 信息
+    let latestUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined
 
     try {
       while (true) {
@@ -445,19 +447,28 @@ export class GeminiService implements ILLMService {
               toolCallsAccumulator.push(...toolCalls)
             }
 
+            // 更新 usage 信息
+            if (parsed.usageMetadata) {
+              latestUsage = {
+                promptTokens: parsed.usageMetadata.promptTokenCount || 0,
+                completionTokens: parsed.usageMetadata.candidatesTokenCount || 0,
+                totalTokens: parsed.usageMetadata.totalTokenCount || 0,
+              }
+            }
+
             // 检查是否完成
             const finishReason = candidate?.finishReason
             if (finishReason) {
-              aiLogger.info('Gemini', '流式响应完成', { finishReason, toolCallsCount: toolCallsAccumulator.length })
+              aiLogger.info('Gemini', '流式响应完成', { finishReason, toolCallsCount: toolCallsAccumulator.length, usage: latestUsage })
 
               if (toolCallsAccumulator.length > 0) {
-                yield { content: '', isFinished: true, finishReason: 'tool_calls', tool_calls: toolCallsAccumulator }
+                yield { content: '', isFinished: true, finishReason: 'tool_calls', tool_calls: toolCallsAccumulator, usage: latestUsage }
               } else {
                 let reason: ChatStreamChunk['finishReason'] = 'stop'
                 if (finishReason === 'MAX_TOKENS') {
                   reason = 'length'
                 }
-                yield { content: '', isFinished: true, finishReason: reason }
+                yield { content: '', isFinished: true, finishReason: reason, usage: latestUsage }
               }
               return
             }
@@ -470,9 +481,9 @@ export class GeminiService implements ILLMService {
 
       // 如果循环正常结束，发送完成信号
       if (toolCallsAccumulator.length > 0) {
-        yield { content: '', isFinished: true, finishReason: 'tool_calls', tool_calls: toolCallsAccumulator }
+        yield { content: '', isFinished: true, finishReason: 'tool_calls', tool_calls: toolCallsAccumulator, usage: latestUsage }
       } else {
-        yield { content: '', isFinished: true, finishReason: 'stop' }
+        yield { content: '', isFinished: true, finishReason: 'stop', usage: latestUsage }
       }
     } catch (error) {
       // 如果是中止错误，正常返回

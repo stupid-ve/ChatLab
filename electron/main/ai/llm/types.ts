@@ -67,6 +67,12 @@ export interface ChatStreamChunk {
   finishReason?: 'stop' | 'length' | 'error' | 'tool_calls'
   /** 流式过程中的 tool_calls（增量） */
   tool_calls?: ToolCall[]
+  /** Token 使用量（通常在最后一个 chunk 中返回） */
+  usage?: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
 }
 
 // ==================== Function Calling 相关类型 ====================

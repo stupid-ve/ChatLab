@@ -67,6 +67,13 @@ export interface ToolStatus {
   result?: unknown
 }
 
+// Token 使用量类型
+export interface TokenUsage {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
+
 // 工具名称映射（英文 → 中文）
 const TOOL_DISPLAY_NAMES: Record<string, string> = {
   search_messages: '搜索聊天记录',
@@ -104,6 +111,9 @@ export function useAIChat(
   // 工具调用状态
   const currentToolStatus = ref<ToolStatus | null>(null)
   const toolsUsedInCurrentRound = ref<string[]>([])
+
+  // Token 使用量（当前会话累计）
+  const sessionTokenUsage = ref<TokenUsage>({ promptTokens: 0, completionTokens: 0, totalTokens: 0 })
 
   // 中止控制
   let isAborted = false
@@ -339,9 +349,18 @@ export function useAIChat(
               break
 
             case 'done':
-              // 完成
-              console.log('[AI] Agent 完成')
+              // 完成 - 更新 Token 使用量
+              console.log('[AI] Agent 完成', chunk.usage)
               currentToolStatus.value = null
+              // 更新会话累计 Token（流式响应在最后一个 chunk 返回 usage）
+              if (chunk.usage) {
+                sessionTokenUsage.value = {
+                  promptTokens: sessionTokenUsage.value.promptTokens + chunk.usage.promptTokens,
+                  completionTokens: sessionTokenUsage.value.completionTokens + chunk.usage.completionTokens,
+                  totalTokens: sessionTokenUsage.value.totalTokens + chunk.usage.totalTokens,
+                }
+                console.log('[AI] Token 使用量更新:', sessionTokenUsage.value)
+              }
               break
 
             case 'error':
@@ -506,6 +525,8 @@ export function useAIChat(
     messages.value = []
     sourceMessages.value = []
     currentKeywords.value = []
+    // 重置 Token 计数
+    sessionTokenUsage.value = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
 
     if (welcomeMessage) {
       messages.value.push({
@@ -573,6 +594,7 @@ export function useAIChat(
     currentConversationId,
     currentToolStatus,
     toolsUsedInCurrentRound,
+    sessionTokenUsage,
 
     // 方法
     sendMessage,
