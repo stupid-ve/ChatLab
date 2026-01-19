@@ -81,13 +81,13 @@ export function formatWithDayjs(ts: number, format: string): string {
  * 格式化日期范围（支持自定义格式）
  * @param startTs 开始时间戳（秒）
  * @param endTs 结束时间戳（秒）
- * @param format 日期格式，默认 'YYYY.MM.DD'
+ * @param format 日期格式，默认 'YYYY/MM/DD'
  * @param separator 分隔符，默认 ' - '
  */
 export function formatDateRange(
   startTs: number,
   endTs: number,
-  format: string = 'YYYY.MM.DD',
+  format: string = 'YYYY/MM/DD',
   separator: string = ' - '
 ): string {
   const start = dayjs.unix(startTs).format(format)

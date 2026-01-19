@@ -147,6 +147,7 @@ watch(
       :session="session"
       :total-duration-days="totalDurationDays"
       :total-daily-avg-messages="totalDailyAvgMessages"
+      :time-range="timeRange"
     />
 
     <!-- 双方消息对比 -->

@@ -1,14 +1,23 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AnalysisSession } from '@/types/base'
+import { formatDateRange } from '@/utils'
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   session: AnalysisSession
   totalDurationDays: number
   totalDailyAvgMessages: number
+  timeRange: { start: number; end: number } | null
 }>()
+
+// 聊天记录起止时间（完整范围）
+const fullTimeRangeText = computed(() => {
+  if (!props.timeRange) return ''
+  return formatDateRange(props.timeRange.start, props.timeRange.end, 'YYYY/MM/DD')
+})
 </script>
 
 <template>
@@ -28,6 +37,10 @@ defineProps<{
         <p class="mt-2 text-lg font-medium text-pink-100 dark:text-gray-400">
           {{ session.type === 'private' ? t('privateChat') : t('groupChat') }} ·
           <span class="opacity-80">{{ t('analysisReport') }}</span>
+        </p>
+        <!-- 聊天记录起止时间 -->
+        <p v-if="fullTimeRangeText" class="mt-2 text-sm font-medium text-pink-100/90 dark:text-gray-400">
+          {{ fullTimeRangeText }}
         </p>
       </div>
 

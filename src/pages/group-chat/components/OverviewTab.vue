@@ -137,6 +137,7 @@ watch(
       :session="session"
       :total-duration-days="totalDurationDays"
       :total-daily-avg-messages="totalDailyAvgMessages"
+      :time-range="timeRange"
     />
 
     <!-- 关键指标卡片 -->
