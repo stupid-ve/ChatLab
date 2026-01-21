@@ -54,14 +54,9 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   target:
+    # 架构由 CI 通过 --x64/--arm64 指定，避免在单个 job 里同时打双架构
     - target: dmg
-      arch:
-        - x64
-        - arm64
     - target: zip
-      arch:
-        - x64
-        - arm64
   artifactName: ChatLab-${version}-${arch}.${ext}
 
 # macOS 平台的 DMG 配置
