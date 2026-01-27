@@ -1,5 +1,27 @@
 [
   {
+    "version": "0.9.0",
+    "date": "2026-01-28",
+    "summary": "Add NLP capabilities with a word cloud page under the Quotes tab; add a Views tab for more charts; support following system proxy settings; and refine some pages and styles.",
+    "changes": [
+      {
+        "type": "feat",
+        "items": [
+          "Optimize user selector performance with virtualized loading",
+          "Move rankings to the Views tab",
+          "Introduce tokenization and add a word cloud sub-tab",
+          "Improve group chat tab copy",
+          "Network proxy follows system proxy settings",
+          "Optimize release notes display logic"
+        ]
+      },
+      {
+        "type": "style",
+        "items": ["Improve Markdown rendering styles"]
+      }
+    ]
+  },
+  {
     "version": "0.8.0",
     "date": "2026-01-26",
     "summary": "This update adds session summaries and vector retrieval; shows release notes after each update; improves parts of the UI; and fixes some known issues.",
@@ -18,9 +40,7 @@
       },
       {
         "type": "fix",
-        "items": [
-          "Fix shuakami-jsonl parsing error (fix #50)"
-        ]
+        "items": ["Fix shuakami-jsonl parsing error (fix #50)"]
       }
     ]
   },
@@ -89,16 +109,11 @@
     "changes": [
       {
         "type": "feat",
-        "items": [
-          "Improve copy"
-        ]
+        "items": ["Improve copy"]
       },
       {
         "type": "fix",
-        "items": [
-          "Fix app process not exiting on Windows when closing (#33)",
-          "Fix number input bug (resolve #34)"
-        ]
+        "items": ["Fix app process not exiting on Windows when closing (#33)", "Fix number input bug (resolve #34)"]
       }
     ]
   },
@@ -121,9 +136,7 @@
       },
       {
         "type": "chore",
-        "items": [
-          "Remove componenst.d.ts"
-        ]
+        "items": ["Remove componenst.d.ts"]
       }
     ]
   },
@@ -147,10 +160,7 @@
       },
       {
         "type": "fix",
-        "items": [
-          "Fix theme-follow-system setting not working",
-          "Fix update modal layout issues"
-        ]
+        "items": ["Fix theme-follow-system setting not working", "Fix update modal layout issues"]
       }
     ]
   },
@@ -203,9 +213,7 @@
       },
       {
         "type": "fix",
-        "items": [
-          "Fix some users having empty platformId"
-        ]
+        "items": ["Fix some users having empty platformId"]
       }
     ]
   },
@@ -254,9 +262,7 @@
     "changes": [
       {
         "type": "fix",
-        "items": [
-          "Fix Echotrace parser errors"
-        ]
+        "items": ["Fix Echotrace parser errors"]
       }
     ]
   },
@@ -277,9 +283,7 @@
       },
       {
         "type": "fix",
-        "items": [
-          "Fix private chats misidentified as group chats"
-        ]
+        "items": ["Fix private chats misidentified as group chats"]
       }
     ]
   },
@@ -298,9 +302,7 @@
       },
       {
         "type": "fix",
-        "items": [
-          "Fix message manager z-index being too low"
-        ]
+        "items": ["Fix message manager z-index being too low"]
       }
     ]
   },
@@ -311,9 +313,7 @@
     "changes": [
       {
         "type": "feat",
-        "items": [
-          "Initial release"
-        ]
+        "items": ["Initial release"]
       }
     ]
   }
