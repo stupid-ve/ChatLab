@@ -1,5 +1,27 @@
 [
   {
+    "version": "0.9.1",
+    "date": "2026-01-30",
+    "summary": "Add LINE chat import, batch management, and chat search, plus fixes for known issues.",
+    "changes": [
+      {
+        "type": "feat",
+        "items": [
+          "Add batch management with batch delete and merge",
+          "Support chat conversation search",
+          "Support LINE chat import",
+          "Compatible with WeFlow exported JSON format",
+          "Member list uses backend pagination",
+          "Improve some copy"
+        ]
+      },
+      {
+        "type": "fix",
+        "items": ["Fix Windows app not closing during updates due to Worker occupation"]
+      }
+    ]
+  },
+  {
     "version": "0.9.0",
     "date": "2026-01-28",
     "summary": "Add NLP capabilities with a word cloud page under the Quotes tab; add a Views tab for more charts; support following system proxy settings; and refine some pages and styles.",
