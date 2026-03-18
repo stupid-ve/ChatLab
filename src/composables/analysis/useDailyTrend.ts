@@ -1,11 +1,15 @@
-import { computed } from 'vue'
+import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 import type { DailyActivity } from '@/types/analysis'
 import type { EChartLineData } from '@/components/charts'
 import dayjs from 'dayjs'
 
-export function useDailyTrend(dailyActivity: DailyActivity[]) {
+export function useDailyTrend(dailyActivitySource: MaybeRefOrGetter<DailyActivity[]>) {
+  // 统一兼容普通数组、ref 和 getter，避免在 setup 阶段拿到初始快照后丢失响应性。
+  const resolvedDailyActivity = computed(() => toValue(dailyActivitySource))
+
   // 检测是否跨年
   const isMultiYear = computed(() => {
+    const dailyActivity = resolvedDailyActivity.value
     if (dailyActivity.length < 2) return false
     const years = new Set(dailyActivity.map((d) => dayjs(d.date).year()))
     return years.size > 1
@@ -13,7 +17,7 @@ export function useDailyTrend(dailyActivity: DailyActivity[]) {
 
   // 每日趋势图数据（动态聚合）
   const dailyChartData = computed<EChartLineData>(() => {
-    const rawData = dailyActivity
+    const rawData = resolvedDailyActivity.value
     const maxPoints = 50 // 最大展示点数
 
     if (rawData.length <= maxPoints) {

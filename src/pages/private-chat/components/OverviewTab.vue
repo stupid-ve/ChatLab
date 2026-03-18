@@ -55,7 +55,7 @@ const {
   maxConsecutiveDays,
 } = useOverviewStatistics(props, weekdayActivity)
 
-const { dailyChartData } = useDailyTrend(props.dailyActivity)
+const { dailyChartData } = useDailyTrend(() => props.dailyActivity)
 
 // 消息类型图表数据
 const typeChartData = computed<EChartPieData>(() => {
